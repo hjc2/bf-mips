@@ -1,9 +1,15 @@
 
 
-#t7 is the counter of the bracket delta
+# t0 is the memory pointer
+# t1 is the instruction pointer
+# t2 is the current instruction
+# t3 is the counter (only used when counting the length of the instruction string)
+# t4 is the output pointer
+# t5 is the current tape value
+# t6 is the instruction delta
+# t7 is the counter of the bracket delta
 
-
-#t3 
+# s0 is the length of the string
 
         .text
         .globl  main
