@@ -73,14 +73,15 @@ execute:
         # Instruction: "]"
         beq $t2, 93, loop_end
 
-        # bge $t6, $s0, close
+        bge $t6, $s0, execute
         # # safe exit on unrecognized token
 
-        j close
+        j pre_loop
         # j pre_loop
 
 pre_loop:
         addi $t1, $t1, 1 # Move code pointer to next instruction
+        addi $t6, $t6, 1
 
         j execute
 
@@ -135,6 +136,7 @@ open_loop:
         beq $t7, $zero, pre_loop # if brackets have been matched, exit loop
 
         addi $t1, $t1, 1 # move ptr to next instruction
+        addi $t6, $6, 1 # increment counter
         lb $t2, ($t1)    # load the instruction
 
         # counting additional open bracket
@@ -166,6 +168,7 @@ rear_loop:
         ble $t7, $zero, pre_loop
 
         addi $t1, $t1, -1 # Move code pointer to next instruction
+        addi $t6, $t6, -1 #move counter down
         lb $t2, ($t1)    # Load current instruction from code
         # Instruction: "["
         beq $t2, 91, open_back
@@ -178,11 +181,11 @@ open_back:
     j rear_loop
 
 close_back:
-    addi $t7, $t7, 1
+    addi $t7, $t7, 1 
     j rear_loop
 
 close:
-        #print over
+        #prints command that program has exited
         la $a0, over
         li $v0, 4
         syscall
@@ -194,11 +197,14 @@ close:
 
         .data
             newline:   .asciiz "\n"
-            over: .asciiz "\nover"
+            over: .asciiz "\nexited"
             tape: .space 300000        # size of the tape memory
             ptr:    .word  0          # Pointer to current position in memory
             output: .space 1          # Allocate 1 byte for program output
         #     code: .asciiz "++++++++++[->+++>+++++++>++++++++++>+++++++++++>++++++++++++<<<<<]>>+++.<++.>>>++.<+++++.>++++.>+.<<<<.>>>.<-.---.<<.>>+.>-----..---.<<<+."
         #     code: .asciiz ">><<"
-            code: .asciiz "+++++[->----[---->+<]>++.-[++++>---<]>.++.---------.+++.[++>---<]>--.++[->+++<]>.+++++++++..---.+++++++.+[-->+++++<]>-.<]"
-        #     code: .asciiz "+++++++++++>+>>>>++++++++++++++++++++++++++++++++++++++++++++>++++++++++++++++++++++++++++++++<<<<<<[>[>>>>>>+>+<<<<<<<-]>>>>>>>[<<<<<<<+>>>>>>>-]<[>++++++++++[-<-[>>+>+<<<-]>>>[<<<+>>>-]+<[>[-]<[-]]>[<<[>>>+<<<-]>>[-]]<<]>>>[>>+>+<<<-]>>>[<<<+>>>-]+<[>[-]<[-]]>[<<+>>[-]]<<<<<<<]>>>>>[++++++++++++++++++++++++++++++++++++++++++++++++.[-]]++++++++++<[->-<]>++++++++++++++++++++++++++++++++++++++++++++++++.[-]<<<<<<<<<<<<[>>>+>+<<<<-]>>>>[<<<<+>>>>-]<-[>>.>.<<<[-]]<<[>>+>+<<<-]>>>[<<<+>>>-]<<[<+>-]>[<+>-]<<<-]"
+        #     code: .asciiz "+++++[->----[---->+<]>++.-[++++>---<]>.++.---------.+++.[++>---<]>--.++[->+++<]>.+++++++++..---.+++++++.+[-->+++++<]>-.<]"
+        #     code: .asciiz "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." #hello world
+
+
+
