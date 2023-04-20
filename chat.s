@@ -1,6 +1,4 @@
 
-
-
 #t7 is the counter of the bracket delta
 
 #
@@ -23,7 +21,7 @@ main:
 
 execute:
         lb $t2, ($t1)    # Load current instruction from code
-        addi $t1, $t1, 1 # Move code pointer to next instruction
+        # addi $t1, $t1, 1 # Move code pointer to next instruction
 
         # Switch statement to handle each Brainfuck instruction
         lw $t0, ptr      # Load current memory pointer into $t0
@@ -54,98 +52,141 @@ execute:
 
         j close
 
+
+pre_loop:
+        addi $t1, $t1, 1 # Move code pointer to next instruction
+
+        j execute
+
 inc_ptr:
         addi $t0, $t0, 1  # Increment pointer
         sw $t0, ptr       # Save updated pointer
-        jr execute        # Jump back to execute subroutine
+        j pre_loop        # Jump back to execute subroutine
 dec_ptr:
         addi $t0, $t0, -1 # Decrement pointer
         sw $t0, ptr       # Save updated pointer
-        jr execute        # Jump back to execute subroutine
+        j pre_loop        # Jump back to execute subroutine
 
 inc_byte:
         lb $t5, ($t0)     # Load byte at current memory location
         addi $t5, $t5, 1  # Increment byte
         sb $t5, ($t0)     # Store updated byte back into memory
-        jr execute        # Jump back to execute subroutine
+        jr pre_loop        # Jump back to execute subroutine
 
 dec_byte:
         lb $t5, ($t0)     # Load byte at current memory location
         addi $t5, $t5, -1 # Decrement byte
         sb $t5, ($t0)     # Store updated byte back into memory
-
-        jr execute        # Jump back to execute subroutine
+        j pre_loop        # Jump back to execute subroutine
 
 output_byte:
         lb $a0, ($t0) # Load byte at current memory location
         li $v0, 11 # Set $v0 to 11 to indicate output
         syscall # Print byte to console
-        jr execute # Jump back to execute subroutine
+        j pre_loop # Jump back to execute subroutine
 
-# LOOPING MECHANISMS
+# FRONT BRACKET HANDLING
+
+
+        # elif(code[instruction] == "["): // loop start
+        #     if(tape[index] == 0): // front loop
+        #         paren = 1
+        #         while paren > 0: // open loop
+        #             instruction += 1
+        #             if(code[instruction] == "]"): #open front
+        #                 paren -= 1
+        #             elif(code[instruction] == "["): #close front
+        #                 paren += 1
+
+
+        #         instruction += 1 #end open
+        #     else:
+        #         instruction += 1
 
 loop_start:
-    #branch if the byte at the current memory location is zero
-    beq     $t2, 0, front_loop
+    #if tape index is 0
+    lb $t5, ($t0)
+    beq $t5, $zero, front
+    j pre_loop
 
-    jr execute
-    
 
-start_loop:
-    jal incr_code
-    j front_loop
+front:
+    #set register 7 to 1
+    li $t7, 1
+    j open_loop
 
-front_loop:
-        beq $t7, 0, execute
+open_loop:
+        
+        beq $t7, $zero, pre_loop
 
-        lb $t2, ($t1)    # Load current instruction from code
         addi $t1, $t1, 1 # Move code pointer to next instruction
+        lb $t2, ($t1)    # Load current instruction from code
 
         # Instruction: "["
-        beq $t2, 91, incr_code
+        beq $t2, 91, open_front
 
         # Instruction: "]"
-        beq $t2, 93, decr_code
+        beq $t2, 93, close_front
 
-        j front_loop
+        j open_loop
 
-
-
-incr_code:
-    addi $t7, $t7, 1
-    jr front_loop
-
-decr_code:
+open_front:
     addi $t7, $t7, -1
-    jr front_loop
+    j open_loop
+
+close_front:
+    addi $t7, $t7, 1
+    j open_loop
 
 
-# END LOOPING STUFF
+
+
+# CLOSE BRACKET HANDLING
+
+        # elif(code[instruction] == "]"):
+        #     if(tape[index] != 0):
+        #         paren = 1
+        #         while paren > 0:
+        #             instruction -= 1
+        #             if(code[instruction] == "["):
+        #                 paren -= 1
+        #             if(code[instruction] == "]"):
+        #                 paren += 1
+        #     else:
+        #         instruction += 1
+        # else:
+        #     instruction += 1
 
 loop_end:
-    #branch if the byte at the current memory location is zero
-    beq     $t2, 0, execute
+    #if tape index is 0
+    lb $t5, ($t0)
+    bne $t5, $zero, back
+    j pre_loop
 
-    j close_loop
+back:
+    #set register 7 to 1
+    li $t7, 1
+    j rear_loop
 
-    #branch if the byte at the current memory location is not zero
+rear_loop:
+        ble $t7, $zero, pre_loop
 
-
-close_loop:
-
-        beq $t7, 0, execute
-
-        lb $t2, ($t1)    # Load current instruction from code
         addi $t1, $t1, -1 # Move code pointer to next instruction
-
-    
+        lb $t2, ($t1)    # Load current instruction from code
         # Instruction: "["
-        beq $t2, 91, incr_code
-
+        beq $t2, 91, open_back
         # Instruction: "]"
-        beq $t2, 93, decr_code
+        beq $t2, 93, close_back
+        j rear_loop
 
-        j close_loop
+open_back:
+    addi $t7, $t7, -1
+    j rear_loop
+
+close_back:
+    addi $t7, $t7, 1
+    j rear_loop
+
 
 close:
 
@@ -166,10 +207,10 @@ close:
             over: .asciiz "\nover"
             newline:   .asciiz "\n"
             prompt: .asciiz "Enter a byte: "
-            # code:   .asciiz "Hello World!"
-            tape: .space 30 # allocate 30000 bytes for the tape
+            tape: .space 3000 # allocate 30000 bytes for the tape
             ptr:    .word  0          # Pointer to current position in memory
-            # code:   .asciiz "++>+++"  # Brainfuck code to execute
             input:  .space 1          # Allocate 1 byte for user input
             output: .space 1          # Allocate 1 byte for program output
+            # code: .asciiz "++++++++++++++++++++++++++++++++++++++++++++++++." 
             code: .asciiz "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
+            # code: .asciiz "[+++++[-].]."
