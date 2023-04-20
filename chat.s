@@ -1,12 +1,14 @@
 
+
 #t7 is the counter of the bracket delta
 
-#
+
+#t3 
+
         .text
         .globl  main
 main:
-#
-    #
+
         addi    $sp, $sp, -4
         sw      $ra, 0($sp)
 
@@ -14,18 +16,40 @@ main:
         sw $t0, ptr
 
         la $t1, code    # Load address of code into $t1
+        la $t7, code
+    
+        # Initialize counter to 0
+        li $t3, 0
+        
+        j loop
+
+    # Loop through string until null terminator is found
+loop:
+        lb $t2, ($t7)       # Load byte from memory
+        beqz $t2, done      # If byte is zero, exit loop
+        addi $t7, $t7, 1    # Increment memory address
+        addi $t3, $t3, 1    # Increment counter
+        j loop              # Repeat loop
+
+done:
+        # Print length of string
+        move $s0, $t3       # Load counter into argument register
+
+        j begin
+
+begin:
+
         jal execute     # Call execute subroutine
 
         j close
 
 
+# main loop for program control
 execute:
         lb $t2, ($t1)    # Load current instruction from code
-        # addi $t1, $t1, 1 # Move code pointer to next instruction
 
         # Switch statement to handle each Brainfuck instruction
         lw $t0, ptr      # Load current memory pointer into $t0
-        la $t3, input    # Load address of input into $t3
         la $t4, output   # Load address of output into $t4
 
         # Instruction: ">"
@@ -49,65 +73,56 @@ execute:
         # Instruction: "]"
         beq $t2, 93, loop_end
 
+        # bge $t6, $s0, close
+        # # safe exit on unrecognized token
 
         j close
-
+        # j pre_loop
 
 pre_loop:
         addi $t1, $t1, 1 # Move code pointer to next instruction
 
         j execute
 
+# move tape right ">"
 inc_ptr:
-        addi $t0, $t0, 1  # Increment pointer
-        sw $t0, ptr       # Save updated pointer
-        j pre_loop        # Jump back to execute subroutine
+        addi $t0, $t0, 1 # INCR
+        sw $t0, ptr # save PTR
+        j pre_loop 
+
+# move tape left"<"
 dec_ptr:
-        addi $t0, $t0, -1 # Decrement pointer
-        sw $t0, ptr       # Save updated pointer
-        j pre_loop        # Jump back to execute subroutine
+        addi $t0, $t0, -1 # DECR
+        sw $t0, ptr # save PTR
+        j pre_loop 
 
+# INCR tape value "+"
 inc_byte:
-        lb $t5, ($t0)     # Load byte at current memory location
-        addi $t5, $t5, 1  # Increment byte
-        sb $t5, ($t0)     # Store updated byte back into memory
-        jr pre_loop        # Jump back to execute subroutine
+        lb $t5, ($t0)
+        addi $t5, $t5, 1
+        sb $t5, ($t0) # save tape
+        jr pre_loop
 
+# DECR tape value "-"
 dec_byte:
-        lb $t5, ($t0)     # Load byte at current memory location
-        addi $t5, $t5, -1 # Decrement byte
-        sb $t5, ($t0)     # Store updated byte back into memory
-        j pre_loop        # Jump back to execute subroutine
+        lb $t5, ($t0)
+        addi $t5, $t5, -1 
+        sb $t5, ($t0) # save tape
+        j pre_loop
 
+# OUTPUT tape value "."
 output_byte:
-        lb $a0, ($t0) # Load byte at current memory location
-        li $v0, 11 # Set $v0 to 11 to indicate output
-        syscall # Print byte to console
-        j pre_loop # Jump back to execute subroutine
+        lb $a0, ($t0)
+        li $v0, 11
+        syscall
+        j pre_loop
 
-# FRONT BRACKET HANDLING
-
-
-        # elif(code[instruction] == "["): // loop start
-        #     if(tape[index] == 0): // front loop
-        #         paren = 1
-        #         while paren > 0: // open loop
-        #             instruction += 1
-        #             if(code[instruction] == "]"): #open front
-        #                 paren -= 1
-        #             elif(code[instruction] == "["): #close front
-        #                 paren += 1
-
-
-        #         instruction += 1 #end open
-        #     else:
-        #         instruction += 1
+# OPEN BRACKET [
 
 loop_start:
-    #if tape index is 0
-    lb $t5, ($t0)
-    beq $t5, $zero, front
-    j pre_loop
+    lb $t5, ($t0) # load tape value
+    beq $t5, $zero, front # in the case that the tape symbol is 0, initiate the loop
+    j pre_loop # if not 0, continue to next instruction
 
 
 front:
@@ -117,56 +132,35 @@ front:
 
 open_loop:
         
-        beq $t7, $zero, pre_loop
+        beq $t7, $zero, pre_loop # if brackets have been matched, exit loop
 
-        addi $t1, $t1, 1 # Move code pointer to next instruction
-        lb $t2, ($t1)    # Load current instruction from code
+        addi $t1, $t1, 1 # move ptr to next instruction
+        lb $t2, ($t1)    # load the instruction
 
-        # Instruction: "["
+        # counting additional open bracket
         beq $t2, 91, open_front
 
-        # Instruction: "]"
+        # counting additional close bracket
         beq $t2, 93, close_front
 
-        j open_loop
+        j open_loop # if not a bracket, continue to next instruction
 
-open_front:
+open_front: # adds to the counter of the bracket delta
     addi $t7, $t7, -1
     j open_loop
 
-close_front:
+close_front: # subtracts from the counter of the bracket delta
     addi $t7, $t7, 1
     j open_loop
 
 
-
-
-# CLOSE BRACKET HANDLING
-
-        # elif(code[instruction] == "]"):
-        #     if(tape[index] != 0):
-        #         paren = 1
-        #         while paren > 0:
-        #             instruction -= 1
-        #             if(code[instruction] == "["):
-        #                 paren -= 1
-        #             if(code[instruction] == "]"):
-        #                 paren += 1
-        #     else:
-        #         instruction += 1
-        # else:
-        #     instruction += 1
+# CLOSE BRACKET ]
 
 loop_end:
-    #if tape index is 0
     lb $t5, ($t0)
-    bne $t5, $zero, back
-    j pre_loop
-
-back:
-    #set register 7 to 1
     li $t7, 1
-    j rear_loop
+    bne $t5, $zero, rear_loop
+    j pre_loop
 
 rear_loop:
         ble $t7, $zero, pre_loop
@@ -187,31 +181,24 @@ close_back:
     addi $t7, $t7, 1
     j rear_loop
 
-
 close:
-
         #print over
         la $a0, over
         li $v0, 4
         syscall
 
-
-    
         lw      $ra, 0($sp)
         addi    $sp, $sp, 4
         jr      $ra
         .end    main
 
-#
         .data
-            over: .asciiz "\nover"
             newline:   .asciiz "\n"
-            prompt: .asciiz "Enter a byte: "
-            tape: .space 30000 # allocate 30000 bytes for the tape
+            over: .asciiz "\nover"
+            tape: .space 300000        # size of the tape memory
             ptr:    .word  0          # Pointer to current position in memory
-            input:  .space 1          # Allocate 1 byte for user input
             output: .space 1          # Allocate 1 byte for program output
-            # code: .asciiz "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."
-            # code: .asciiz "++++++++++[->+++>+++++++>++++++++++>+++++++++++>++++++++++++<<<<<]>>+++.<++.>>>++.<+++++.>++++.>+.<<<<.>>>.<-.---.<<.>>+.>-----..---.<<<+."
+        #     code: .asciiz "++++++++++[->+++>+++++++>++++++++++>+++++++++++>++++++++++++<<<<<]>>+++.<++.>>>++.<+++++.>++++.>+.<<<<.>>>.<-.---.<<.>>+.>-----..---.<<<+."
+        #     code: .asciiz ">><<"
             code: .asciiz "+++++[->----[---->+<]>++.-[++++>---<]>.++.---------.+++.[++>---<]>--.++[->+++<]>.+++++++++..---.+++++++.+[-->+++++<]>-.<]"
-            # code: .asciiz "+++++++++++>+>>>>++++++++++++++++++++++++++++++++++++++++++++>++++++++++++++++++++++++++++++++<<<<<<[>[>>>>>>+>+<<<<<<<-]>>>>>>>[<<<<<<<+>>>>>>>-]<[>++++++++++[-<-[>>+>+<<<-]>>>[<<<+>>>-]+<[>[-]<[-]]>[<<[>>>+<<<-]>>[-]]<<]>>>[>>+>+<<<-]>>>[<<<+>>>-]+<[>[-]<[-]]>[<<+>>[-]]<<<<<<<]>>>>>[++++++++++++++++++++++++++++++++++++++++++++++++.[-]]++++++++++<[->-<]>++++++++++++++++++++++++++++++++++++++++++++++++.[-]<<<<<<<<<<<<[>>>+>+<<<<-]>>>>[<<<<+>>>>-]<-[>>.>.<<<[-]]<<[>>+>+<<<-]>>>[<<<+>>>-]<<[<+>-]>[<+>-]<<<-]"
+        #     code: .asciiz "+++++++++++>+>>>>++++++++++++++++++++++++++++++++++++++++++++>++++++++++++++++++++++++++++++++<<<<<<[>[>>>>>>+>+<<<<<<<-]>>>>>>>[<<<<<<<+>>>>>>>-]<[>++++++++++[-<-[>>+>+<<<-]>>>[<<<+>>>-]+<[>[-]<[-]]>[<<[>>>+<<<-]>>[-]]<<]>>>[>>+>+<<<-]>>>[<<<+>>>-]+<[>[-]<[-]]>[<<+>>[-]]<<<<<<<]>>>>>[++++++++++++++++++++++++++++++++++++++++++++++++.[-]]++++++++++<[->-<]>++++++++++++++++++++++++++++++++++++++++++++++++.[-]<<<<<<<<<<<<[>>>+>+<<<<-]>>>>[<<<<+>>>>-]<-[>>.>.<<<[-]]<<[>>+>+<<<-]>>>[<<<+>>>-]<<[<+>-]>[<+>-]<<<-]"
