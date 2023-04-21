@@ -201,10 +201,8 @@ close:
             tape: .space 300000        # size of the tape memory
             ptr:    .word  0          # Pointer to current position in memory
             output: .space 1          # Allocate 1 byte for program output
-        #     code: .asciiz "++++++++++[->+++>+++++++>++++++++++>+++++++++++>++++++++++++<<<<<]>>+++.<++.>>>++.<+++++.>++++.>+.<<<<.>>>.<-.---.<<.>>+.>-----..---.<<<+."
-        #     code: .asciiz ">><<"
-        #     code: .asciiz "+++++[->----[---->+<]>++.-[++++>---<]>.++.---------.+++.[++>---<]>--.++[->+++<]>.+++++++++..---.+++++++.+[-->+++++<]>-.<]"
-            code: .asciiz "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." #hello world
-
+        #     code: .asciiz ">><<" # moves across tape without doing anything
+        #     code: .asciiz "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." #hello world
+            code: .asciiz "++>+++++[<+>-]++++++++[<++++++>-]<." # adds the values 5 and 2 and then prints the ASCII corresponding to the value 7 on the tape
 
 
