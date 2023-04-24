@@ -202,7 +202,6 @@ close:
             ptr:    .word  0          # Pointer to current position in memory
             output: .space 1          # Allocate 1 byte for program output
         #     code: .asciiz ">><<" # moves across tape without doing anything
-        #     code: .asciiz "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." #hello world
-            code: .asciiz "++>+++++[<+>-]++++++++[<++++++>-]<." # adds the values 5 and 2 and then prints the ASCII corresponding to the value 7 on the tape
-
+            code: .asciiz "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." #hello world
+        #     code: .asciiz "++>+++++[<+>-]++++++++[<++++++>-]<." # adds the values 5 and 2 and then prints the ASCII corresponding to the value 7 on the tape
 
